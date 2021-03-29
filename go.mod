@@ -1,4 +1,4 @@
-module ethclient
+module github.com/ackermanx/ethclient
 
 go 1.16
 
