@@ -4,20 +4,22 @@ package ethclient
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/pkg/errors"
 )
 
 // Client defines typed wrappers for the Ethereum RPC API.
 type Client struct {
-	c *rpc.Client
+	c       *rpc.Client
+	timeout int
 }
 
 // Dial connects a client to the given URL.
@@ -35,7 +37,12 @@ func DialContext(ctx context.Context, rawurl string) (*Client, error) {
 
 // NewClient creates a client that uses the given RPC client.
 func NewClient(c *rpc.Client) *Client {
-	return &Client{c}
+	return &Client{c: c, timeout: 5}
+}
+
+// NewClientWithTimeout creates a client that uses the given RPC client and timeout.
+func NewClientWithTimeout(c *rpc.Client) *Client {
+	return &Client{c: c, timeout: 5}
 }
 
 func (ec *Client) Close() {
@@ -511,6 +518,76 @@ func (ec *Client) SendTransaction(ctx context.Context, tx *types.Transaction) er
 	return ec.c.CallContext(ctx, nil, "eth_sendRawTransaction", hexutil.Encode(data))
 }
 
+// Call invokes the (constant) contract method with params as input values and
+// sets the output to result. The result type might be a single field for simple
+// returns, a slice of interfaces for anonymous returns and a struct for named
+// returns.
+func (ec *Client) Call(contractAddress common.Address, opts *bind.CallOpts, results *[]interface{}, method string, params ...interface{}) error {
+	// Don't crash on a lazy user
+	if opts == nil {
+		opts = new(bind.CallOpts)
+	}
+	if results == nil {
+		results = new([]interface{})
+	}
+	// Pack the input, call and unpack the results
+	input, err := ParsedAbi.Pack(method, params...)
+	if err != nil {
+		return err
+	}
+	var (
+		msg    = ethereum.CallMsg{From: opts.From, To: &contractAddress, Data: input}
+		ctx    = ensureContext(opts.Context)
+		code   []byte
+		output []byte
+	)
+	if opts.Pending {
+		output, err = ec.PendingCallContract(ctx, msg)
+		if err == nil && len(output) == 0 {
+			// Make sure we have a contract to operate on, and bail out otherwise.
+			if code, err = ec.PendingCodeAt(ctx, contractAddress); err != nil {
+				return err
+			} else if len(code) == 0 {
+				return bind.ErrNoCode
+			}
+		}
+	} else {
+		output, err = ec.CallContract(ctx, msg, opts.BlockNumber)
+		if err != nil {
+			return err
+		}
+		if len(output) == 0 {
+			// Make sure we have a contract to operate on, and bail out otherwise.
+			if code, err = ec.CodeAt(ctx, contractAddress, opts.BlockNumber); err != nil {
+				return err
+			} else if len(code) == 0 {
+				return bind.ErrNoCode
+			}
+		}
+	}
+
+	if len(*results) == 0 {
+		res, err := ParsedAbi.Unpack(method, output)
+		*results = res
+		return err
+	}
+	res := *results
+	return ParsedAbi.UnpackIntoInterface(res[0], method, output)
+}
+
+func (ec *Client) BalanceOf(address, contractAddress common.Address) (balance *big.Int, err error) {
+	var results = make([]interface{}, 0)
+	err = ec.Call(contractAddress, nil, &results, "balanceOf", address)
+	if err != nil {
+		return nil, err
+	}
+	balance, ok := results[0].(*big.Int)
+	if !ok {
+		return nil, errors.New("results[0] is not *big.Int")
+	}
+	return
+}
+
 func toCallArg(msg ethereum.CallMsg) interface{} {
 	arg := map[string]interface{}{
 		"from": msg.From,
@@ -529,4 +606,13 @@ func toCallArg(msg ethereum.CallMsg) interface{} {
 		arg["gasPrice"] = (*hexutil.Big)(msg.GasPrice)
 	}
 	return arg
+}
+
+// ensureContext is a helper method to ensure a context is not nil, even if the
+// user specified it as such.
+func ensureContext(ctx context.Context) context.Context {
+	if ctx == nil {
+		return context.Background()
+	}
+	return ctx
 }
