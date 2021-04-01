@@ -1,4 +1,4 @@
-package pkg
+package swap
 
 import (
 	"encoding/hex"
