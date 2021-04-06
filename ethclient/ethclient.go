@@ -575,6 +575,8 @@ func (ec *Client) Call(contractAddress common.Address, opts *bind.CallOpts, resu
 	return ParsedAbi.UnpackIntoInterface(res[0], method, output)
 }
 
+// BalanceOf query address in contract balance
+// returns *big.Int and error
 func (ec *Client) BalanceOf(address, contractAddress common.Address) (balance *big.Int, err error) {
 	var results = make([]interface{}, 0)
 	err = ec.Call(contractAddress, nil, &results, "balanceOf", address)
