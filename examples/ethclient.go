@@ -1,18 +1,3 @@
-## ethclient
-
-ethclient is extend [go-ethereum](github.com/ethereum/go-ethereum) client. 
-Add `BalanceOf` for query token balance
-
-## install
-
-```
-go get github.com/ackermanx/ethclient
-```
-
-## usage
-Below is an example which shows some common use cases for ethclient.  Check [ethclient_test.go](https://github.com/ackermanx/ethclient/blob/main/ethclient/ethclient_test.go) for more usage.
-
-```go
 package main
 
 import (
@@ -53,4 +38,3 @@ func main() {
 
 	log.Printf("address busd balance: %s\n", balance.String())
 }
-```
