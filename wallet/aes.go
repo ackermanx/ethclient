@@ -23,7 +23,7 @@ func AesCBCEncrypt(data, key []byte) (encrypted []byte, err error) {
 		key = paddingLeft(key, '0', 32)
 	}
 
-	block, err := aes.NewCipher(key)
+	c, err := aes.NewCipher(key)
 	if err != nil {
 		// key length must be 16/24/32
 		err = errors.Wrapf(err, "new cipher error, key length: %d", len(key))
@@ -31,12 +31,12 @@ func AesCBCEncrypt(data, key []byte) (encrypted []byte, err error) {
 	}
 
 	// get block length
-	blockSize := block.BlockSize()
+	blockSize := c.BlockSize()
 	// padding data
 	data = PKCS7Padding(data, blockSize)
 	// crypt mode
 	iv := key[:blockSize]
-	blockMode := cipher.NewCBCEncrypter(block, iv)
+	blockMode := cipher.NewCBCEncrypter(c, iv)
 	// create slice
 	encrypted = make([]byte, len(data))
 	blockMode.CryptBlocks(encrypted, data)
