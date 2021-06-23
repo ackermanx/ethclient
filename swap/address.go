@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	factoryAddrV3 = "0x1F98431c8aD98523631AE4a59f267346ea31F984"
-	factoryAddrV2 = "0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f"
+	FactoryAddrV3 = "0x1F98431c8aD98523631AE4a59f267346ea31F984"
+	FactoryAddrV2 = "0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f"
 )
 
 var (
@@ -41,7 +41,7 @@ var (
 
 // CalculatePoolAddressV2 calculate uniswapV2 pool address offline from pool tokens
 func CalculatePoolAddressV2(token0, token1 string) (pairAddress common.Address, err error) {
-	factoryAddr := common.HexToAddress(factoryAddrV2)
+	factoryAddr := common.HexToAddress(FactoryAddrV2)
 	tkn0, tkn1 := sortAddressess(common.HexToAddress(token0), common.HexToAddress(token1))
 
 	msg := []byte{255}
@@ -80,7 +80,7 @@ func CalculatePoolAddressV3(tokenA, tokenB string, fee *big.Int) (poolAddress co
 	salt := crypto.Keccak256(paramsPacked)
 	// "0xff"
 	msg := []byte{255}
-	msg = append(msg, common.HexToAddress(factoryAddrV3).Bytes()...)
+	msg = append(msg, common.HexToAddress(FactoryAddrV3).Bytes()...)
 	msg = append(msg, salt...)
 	msg = append(msg, PoolInitCodeV3...)
 
