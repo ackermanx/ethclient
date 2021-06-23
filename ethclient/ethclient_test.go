@@ -477,7 +477,10 @@ func testCallContract(t *testing.T, client *rpc.Client) {
 func testAtFunctions(t *testing.T, client *rpc.Client) {
 	ec := NewClient(client)
 	// send a transaction for some interesting pending status
-	sendTransaction(ec)
+	err := sendTransaction(ec)
+	if err != nil {
+		t.Fatal(err)
+	}
 	time.Sleep(100 * time.Millisecond)
 	// Check pending transaction count
 	pending, err := ec.PendingTransactionCount(context.Background())
