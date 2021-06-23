@@ -1,6 +1,6 @@
 ## ethclient
 
-ethclient is extend [go-ethereum](github.com/ethereum/go-ethereum) client. 
+ethclient is extend [go-ethereum](https://github.com/ethereum/go-ethereum) client. 
 Add `BalanceOf` for query token balance
 
 ## install
