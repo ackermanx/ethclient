@@ -24,9 +24,7 @@ func EncodePath(path []common.Address, fees []int) (encoded []byte, err error) {
 	for i := 0; i < len(fees); i++ {
 		encoded = append(encoded, path[i].Bytes()...)
 		feeBytes := big.NewInt(int64(fees[i])).Bytes()
-		if len(feeBytes) < 3 {
-			feeBytes = append([]uint8{0}, feeBytes...)
-		}
+		feeBytes = common.LeftPadBytes(feeBytes, 3)
 		encoded = append(encoded, feeBytes...)
 	}
 	encoded = append(encoded, path[len(path)-1].Bytes()...)
