@@ -1,37 +1,91 @@
-## Welcome to GitHub Pages
+## ethclient
 
-You can use the [editor on GitHub](https://github.com/ackermanx/ethclient/edit/main/docs/index.md) to maintain and preview the content for your website in Markdown files.
+ethclient is extend [go-ethereum](https://github.com/ethereum/go-ethereum) client. 
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+- Add `BalanceOf` for query token balance
 
-### Markdown
+- Add `CalculatePoolAddressV2` `CalculatePoolAddressV3` for calculate uniswap pool address offline
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+## install
 
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
+```
+go get github.com/ackermanx/ethclient
 ```
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
+## usage
+Below is an example which shows some common use cases for ethclient.  Check [ethclient_test.go](https://github.com/ackermanx/ethclient/blob/main/ethclient/ethclient_test.go) for more usage.
 
-### Jekyll Themes
+### get balance
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/ackermanx/ethclient/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+```go
+package main
 
-### Support or Contact
+import (
+	"context"
+	"log"
+	"time"
+	"github.com/ackermanx/ethclient/ethclient"
+	"github.com/ethereum/go-ethereum/common"
+)
 
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+func main() {
+	var binanceMainnet = `https://bsc-dataseed.binance.org`
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	client, err := ethclient.DialContext(ctx, binanceMainnet)
+	cancel()
+	if err != nil {
+		panic(err)
+	}
+
+	// get latest height
+	ctx, cancel = context.WithTimeout(context.Background(), time.Second*5)
+	blockNumber, err := client.BlockNumber(ctx)
+	cancel()
+	if err != nil {
+		panic(err)
+	}
+	log.Println("latest block number: ", blockNumber)
+
+	// get busd balance
+	busdContractAddress := common.HexToAddress("0xe9e7cea3dedca5984780bafc599bd69add087d56")
+	address := common.HexToAddress("0x0D022fA46e3124634c42219DF9587A91972c3930")
+	balance, err := client.BalanceOf(address, busdContractAddress)
+	if err != nil {
+		panic(err)
+	}
+	
+	log.Printf("address busd balance: %s\n", balance.String())
+}
+```
+
+### generate pool address offline
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/big"
+	"github.com/ackermanx/ethclient/swap"
+)
+
+func main() {
+	weth := "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+	dai := "0x6b175474e89094c44da98b954eedeac495271d0f"
+	pair, err := swap.CalculatePoolAddressV2(weth, dai)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("weth-dai pair address in uniswap v2: %s\n", pair.String())
+
+	fee := big.NewInt(3000)
+	poolAddress, err := swap.CalculatePoolAddressV3(weth, dai, fee)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("weth-dai pool address in uniswap v3: %s\n", poolAddress.String())
+}
+
+```
