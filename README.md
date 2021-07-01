@@ -89,3 +89,9 @@ func main() {
 }
 
 ```
+
+## JetBrains OS licenses
+
+`ethclient` had been being developed with GoLand under the **free JetBrains Open Source license(s)** granted by JetBrains s.r.o., hence I would like to express my thanks here.
+
+<a href="https://www.jetbrains.com/?from=ethclient" target="_blank"><img src="https://raw.githubusercontent.com/ackermanx/ethclient/main/docs/images/jetbrains/jetbrains-variant-3.svg" width="216" align="middle" align="middle"/></a>
