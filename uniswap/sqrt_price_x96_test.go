@@ -1,4 +1,4 @@
-package swap
+package uniswap
 
 import (
 	"math/big"
