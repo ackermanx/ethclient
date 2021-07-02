@@ -33,7 +33,6 @@ type Wallet struct {
 	mnemonic  string
 	masterKey *hdkeychain.ExtendedKey
 	seed      []byte
-	url       accounts.URL
 	paths     map[common.Address]accounts.DerivationPath
 	accounts  []accounts.Account
 	stateLock sync.RWMutex
@@ -84,31 +83,6 @@ func NewFromSeed(seed []byte) (*Wallet, error) {
 	}
 
 	return newWallet(seed)
-}
-
-// URL implements accounts.Wallet, returning the URL of the device that
-// the wallet is on, however this does nothing since this is not a hardware device.
-func (w *Wallet) URL() accounts.URL {
-	return w.url
-}
-
-// Status implements accounts.Wallet, returning a custom status message
-// from the underlying vendor-specific hardware wallet implementation,
-// however this does nothing since this is not a hardware device.
-func (w *Wallet) Status() (string, error) {
-	return "ok", nil
-}
-
-// Open implements accounts.Wallet, however this does nothing since this
-// is not a hardware device.
-func (w *Wallet) Open(passphrase string) error {
-	return nil
-}
-
-// Close implements accounts.Wallet, however this does nothing since this
-// is not a hardware device.
-func (w *Wallet) Close() error {
-	return nil
 }
 
 // Accounts implements accounts.Wallet, returning the list of accounts pinned to
@@ -237,7 +211,7 @@ func (w *Wallet) SignTxEIP155(account accounts.Account, tx *types.Transaction, c
 		return nil, err
 	}
 
-	msg, err := signedTx.AsMessage(types.NewEIP155Signer(chainID))
+	msg, err := signedTx.AsMessage(types.NewEIP155Signer(chainID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +246,7 @@ func (w *Wallet) SignTx(account accounts.Account, tx *types.Transaction, chainID
 		return nil, err
 	}
 
-	msg, err := signedTx.AsMessage(types.HomesteadSigner{})
+	msg, err := signedTx.AsMessage(types.HomesteadSigner{}, nil)
 	if err != nil {
 		return nil, err
 	}
