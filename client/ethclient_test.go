@@ -566,3 +566,7 @@ func sendTransaction(ec *Client) error {
 	// Send transaction
 	return ec.SendTransaction(context.Background(), signedTx)
 }
+
+func TestContractTx(t *testing.T) {
+
+}

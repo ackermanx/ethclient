@@ -7,6 +7,8 @@ ethclient is extend [go-ethereum](https://github.com/ethereum/go-ethereum) clien
 - Add `CalculatePoolAddressV2` `CalculatePoolAddressV3` for calculate uniswap pool address offline
 
 - Refactor `Call` for call smart contract method
+
+- Add `BuildContractTx` for contract transaction
 ## install
 
 ```
@@ -14,7 +16,7 @@ go get github.com/ackermanx/ethereum
 ```
 
 ## usage
-Below is an example which shows some common use cases for ethclient.  Check [ethclient_test.go](https://github.com/ackermanx/ethereum/blob/main/ethereum/ethclient_test.go) for more usage.
+Below is an example which shows some common use cases for ethclient.  Check [ethclient_test.go](https://github.com/ackermanx/ethereum/blob/main/client/ethclient_test.go) for more usage.
 
 ### get balance
 
@@ -24,13 +26,20 @@ package main
 import (
 	"context"
 	"log"
+	"math/big"
 	"time"
 
 	"github.com/ackermanx/ethereum/client"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+)
+
+var (
+	testKey = "33f46d353f191f8067dc7d256e9d9ee7a2a3300649ff7c70fe1cd7e5d5237da5"
 )
 
 func main() {
-	var binanceMainnet = `https://bsc-dataseed.binance.org`
+	var binanceMainnet = `https://data-seed-prebsc-1-s1.binance.org:8545`
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	c, err := client.DialContext(ctx, binanceMainnet)
@@ -49,14 +58,35 @@ func main() {
 	log.Println("latest block number: ", blockNumber)
 
 	// get busd balance
-	busdContractAddress := "0xe9e7cea3dedca5984780bafc599bd69add087d56"
-	address := "0x0D022fA46e3124634c42219DF9587A91972c3930"
-	balance, err := c.BalanceOf(address, busdContractAddress)
+	busdContractAddress := common.HexToAddress("0xed24fc36d5ee211ea25a80239fb8c4cfd80f12ee")
+	address := "0xe96e6b50db659935878f6f3b0491B7F192cf5F59"
+	bnbBalance, err := c.BalanceAt(context.Background(), common.HexToAddress(address), nil)
 	if err != nil {
 		panic(err)
 	}
-
+	log.Println("bnbBalance: ", bnbBalance.String())
+	balance, err := c.BalanceOf(address, busdContractAddress.String())
+	if err != nil {
+		panic(err)
+	}
 	log.Printf("address busd balance: %s\n", balance.String())
+
+	// build contract transfer
+	tx, err := c.BuildContractTx(
+		testKey, "transfer",
+		client.ERC20Abi,
+		&busdContractAddress, &bind.TransactOpts{From: common.HexToAddress(address)},
+		common.HexToAddress("0x38F32C2473a314d447d681D30e1C0f5D07194371"),
+		big.NewInt(100000000000000000),
+	)
+	if err != nil {
+		panic(err)
+	}
+	err = c.SendTransaction(context.Background(), tx)
+	if err != nil {
+		panic(err)
+	}
+	log.Println(tx.Hash().String())
 }
 
 ```

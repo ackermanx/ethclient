@@ -7,8 +7,9 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+	"time"
 
-	"errors"
+	"github.com/pkg/errors"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -16,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -23,6 +25,7 @@ import (
 type Client struct {
 	c          *rpc.Client
 	timeout    int
+	chainID    *big.Int
 	parsedAbis AddrAbiMap
 }
 
@@ -41,12 +44,12 @@ func DialContext(ctx context.Context, rawurl string) (*Client, error) {
 
 // NewClient creates a client that uses the given RPC client.
 func NewClient(c *rpc.Client) *Client {
-	return &Client{c: c, timeout: 5, parsedAbis: AddrAbiMap{}}
+	return &Client{c: c, timeout: 10, parsedAbis: AddrAbiMap{}}
 }
 
 // NewClientWithTimeout creates a client that uses the given RPC client and timeout.
-func NewClientWithTimeout(c *rpc.Client) *Client {
-	return &Client{c: c, timeout: 5}
+func NewClientWithTimeout(c *rpc.Client, timeout int) *Client {
+	return &Client{c: c, timeout: timeout, parsedAbis: AddrAbiMap{}}
 }
 
 func (ec *Client) Close() {
@@ -547,7 +550,7 @@ func (ec *Client) Call(contractAddr common.Address, opts *bind.CallOpts, results
 	if !ok {
 		p, err := abi.JSON(strings.NewReader(abiStr))
 		if err != nil {
-			return err
+			return errors.WithMessagef(err, "parse abi: %s", abiStr)
 		}
 		parsedAbi = p
 		ec.parsedAbis.Store(contractAddr, parsedAbi)
@@ -555,7 +558,7 @@ func (ec *Client) Call(contractAddr common.Address, opts *bind.CallOpts, results
 	// Pack the input, call and unpack the results
 	input, err := parsedAbi.Pack(method, params...)
 	if err != nil {
-		return err
+		return errors.WithMessagef(err, "pack method: %s, params: %+v", method, params)
 	}
 	var (
 		msg    = ethereum.CallMsg{From: opts.From, To: &contractAddr, Data: input}
@@ -610,6 +613,154 @@ func (ec *Client) BalanceOf(address, contractAddr string) (balance *big.Int, err
 		return nil, errors.New("results[0] is not *big.Int")
 	}
 	return
+}
+
+// BuildContractTx build contract transaction
+func (ec *Client) BuildContractTx(privKey, method, abiStr string, contract *common.Address, opts *bind.TransactOpts, params ...interface{}) (tx *types.Transaction, err error) {
+	if contract == nil {
+		return nil, errors.New("contract is nil")
+	}
+	// decode private key
+	pKey, err := crypto.HexToECDSA(privKey)
+	if err != nil {
+		err = errors.WithMessage(err, "hex private key to ECDSA key: ")
+		return
+	}
+	from := crypto.PubkeyToAddress(pKey.PublicKey)
+	// Don't crash on a lazy user
+	if opts == nil {
+		opts = &bind.TransactOpts{From: from}
+	}
+
+	// pack input params and cache parsedAbi
+	parsedAbi, ok := ec.parsedAbis.Load(*contract)
+	if !ok {
+		p, err := abi.JSON(strings.NewReader(abiStr))
+		if err != nil {
+			return nil, errors.WithMessagef(err, "parse abi: %s", abiStr)
+		}
+		parsedAbi = p
+		ec.parsedAbis.Store(*contract, parsedAbi)
+	}
+
+	// Pack the input, call and unpack the results
+	input, err := parsedAbi.Pack(method, params...)
+	if err != nil {
+		err = errors.WithMessagef(err, "pack method: %s, params: %+v", method, params)
+		return
+	}
+
+	// Ensure a valid value field and resolve the account nonce
+	value := opts.Value
+	if value == nil {
+		value = new(big.Int)
+	}
+	var nonce uint64
+	if opts.Nonce == nil {
+		nonce, err = ec.PendingNonceAt(ensureContext(opts.Context), from)
+		if err != nil {
+			return nil, fmt.Errorf("failed to retrieve account nonce: %v", err)
+		}
+	} else {
+		nonce = opts.Nonce.Uint64()
+	}
+
+	// Figure out reasonable gas price values
+	if opts.GasPrice != nil && (opts.GasFeeCap != nil || opts.GasTipCap != nil) {
+		return nil, errors.New("both gasPrice and (maxFeePerGas or maxPriorityFeePerGas) specified")
+	}
+	head, err := ec.HeaderByNumber(ensureContext(opts.Context), nil)
+	if err != nil {
+		return nil, errors.WithMessage(err, "header by number")
+	}
+	if head.BaseFee != nil && opts.GasPrice == nil {
+		if opts.GasTipCap == nil {
+			tip, err := ec.SuggestGasTipCap(ensureContext(opts.Context))
+			if err != nil {
+				return nil, err
+			}
+			opts.GasTipCap = tip
+		}
+		if opts.GasFeeCap == nil {
+			gasFeeCap := new(big.Int).Add(
+				opts.GasTipCap,
+				new(big.Int).Mul(head.BaseFee, big.NewInt(2)),
+			)
+			opts.GasFeeCap = gasFeeCap
+		}
+		if opts.GasFeeCap.Cmp(opts.GasTipCap) < 0 {
+			return nil, fmt.Errorf("maxFeePerGas (%v) < maxPriorityFeePerGas (%v)", opts.GasFeeCap, opts.GasTipCap)
+		}
+	} else {
+		if opts.GasFeeCap != nil || opts.GasTipCap != nil {
+			return nil, errors.New("maxFeePerGas or maxPriorityFeePerGas specified but london is not active yet")
+		}
+		if opts.GasPrice == nil {
+			price, err := ec.SuggestGasPrice(ensureContext(opts.Context))
+			if err != nil {
+				return nil, err
+			}
+			opts.GasPrice = price
+		}
+	}
+
+	gasLimit := opts.GasLimit
+	if gasLimit == 0 {
+		// Gas estimation cannot succeed without code for method invocations
+		if code, err := ec.PendingCodeAt(ensureContext(opts.Context), *contract); err != nil {
+			return nil, err
+		} else if len(code) == 0 {
+			return nil, bind.ErrNoCode
+		}
+		// If the contract surely has code (or code is not needed), estimate the transaction
+		msg := ethereum.CallMsg{From: opts.From, To: contract, GasPrice: opts.GasPrice, GasTipCap: opts.GasTipCap, GasFeeCap: opts.GasFeeCap, Value: value, Data: input}
+		gasLimit, err = ec.EstimateGas(ensureContext(opts.Context), msg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to estimate gas needed: %v", err)
+		}
+	}
+
+	// Create the transaction, sign it and schedule it for execution
+	var rawTx *types.Transaction
+	if opts.GasFeeCap == nil {
+		baseTx := &types.LegacyTx{
+			Nonce:    nonce,
+			GasPrice: opts.GasPrice,
+			To:       contract,
+			Gas:      gasLimit,
+			Value:    value,
+			Data:     input,
+		}
+		rawTx = types.NewTx(baseTx)
+	} else {
+		baseTx := &types.DynamicFeeTx{
+			Nonce:     nonce,
+			GasFeeCap: opts.GasFeeCap,
+			GasTipCap: opts.GasTipCap,
+			Gas:       gasLimit,
+			Value:     value,
+			To:        contract,
+			Data:      input,
+		}
+		rawTx = types.NewTx(baseTx)
+	}
+
+	if ec.chainID == nil {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(ec.timeout))
+		chainID, err := ec.ChainID(ctx)
+		cancel()
+		if err != nil {
+			return nil, errors.WithMessage(err, "get chain id: ")
+		}
+		ec.chainID = chainID
+	}
+
+	signedTx, err := types.SignTx(rawTx, types.NewLondonSigner(ec.chainID), pKey)
+	if err != nil {
+		err = errors.WithMessage(err, "signed raw tx")
+		return
+	}
+	return signedTx, nil
 }
 
 func toCallArg(msg ethereum.CallMsg) interface{} {
