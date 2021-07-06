@@ -6,6 +6,7 @@ ethclient is extend [go-ethereum](https://github.com/ethereum/go-ethereum) clien
 
 - Add `CalculatePoolAddressV2` `CalculatePoolAddressV3` for calculate uniswap pool address offline
 
+- Refactor `Call` for call smart contract method
 ## install
 
 ```
@@ -48,8 +49,8 @@ func main() {
 	log.Println("latest block number: ", blockNumber)
 
 	// get busd balance
-	busdContractAddress := common.HexToAddress("0xe9e7cea3dedca5984780bafc599bd69add087d56")
-	address := common.HexToAddress("0x0D022fA46e3124634c42219DF9587A91972c3930")
+	busdContractAddress := "0xe9e7cea3dedca5984780bafc599bd69add087d56"
+	address := "0x0D022fA46e3124634c42219DF9587A91972c3930"
 	balance, err := client.BalanceOf(address, busdContractAddress)
 	if err != nil {
 		panic(err)

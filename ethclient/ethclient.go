@@ -6,20 +6,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"strings"
+
+	"errors"
 
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/pkg/errors"
 )
 
 // Client defines typed wrappers for the Ethereum RPC API.
 type Client struct {
-	c       *rpc.Client
-	timeout int
+	c          *rpc.Client
+	timeout    int
+	parsedAbis map[common.Address]abi.ABI // contractAddress:abi
 }
 
 // Dial connects a client to the given URL.
@@ -37,7 +41,7 @@ func DialContext(ctx context.Context, rawurl string) (*Client, error) {
 
 // NewClient creates a client that uses the given RPC client.
 func NewClient(c *rpc.Client) *Client {
-	return &Client{c: c, timeout: 5}
+	return &Client{c: c, timeout: 5, parsedAbis: make(map[common.Address]abi.ABI)}
 }
 
 // NewClientWithTimeout creates a client that uses the given RPC client and timeout.
@@ -532,7 +536,7 @@ func (ec *Client) SendTransaction(ctx context.Context, tx *types.Transaction) er
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (ec *Client) Call(contractAddress common.Address, opts *bind.CallOpts, results *[]interface{}, method string, params ...interface{}) error {
+func (ec *Client) Call(contractAddr common.Address, opts *bind.CallOpts, results *[]interface{}, method, abiStr string, params ...interface{}) error {
 	// Don't crash on a lazy user
 	if opts == nil {
 		opts = new(bind.CallOpts)
@@ -540,13 +544,23 @@ func (ec *Client) Call(contractAddress common.Address, opts *bind.CallOpts, resu
 	if results == nil {
 		results = new([]interface{})
 	}
+	// cache parsedAbi
+	parsedAbi, ok := ec.parsedAbis[contractAddr]
+	if !ok {
+		p, err := abi.JSON(strings.NewReader(abiStr))
+		if err != nil {
+			return err
+		}
+		parsedAbi = p
+		ec.parsedAbis[contractAddr] = parsedAbi
+	}
 	// Pack the input, call and unpack the results
-	input, err := ParsedAbi.Pack(method, params...)
+	input, err := parsedAbi.Pack(method, params...)
 	if err != nil {
 		return err
 	}
 	var (
-		msg    = ethereum.CallMsg{From: opts.From, To: &contractAddress, Data: input}
+		msg    = ethereum.CallMsg{From: opts.From, To: &contractAddr, Data: input}
 		ctx    = ensureContext(opts.Context)
 		code   []byte
 		output []byte
@@ -555,7 +569,7 @@ func (ec *Client) Call(contractAddress common.Address, opts *bind.CallOpts, resu
 		output, err = ec.PendingCallContract(ctx, msg)
 		if err == nil && len(output) == 0 {
 			// Make sure we have a contract to operate on, and bail out otherwise.
-			if code, err = ec.PendingCodeAt(ctx, contractAddress); err != nil {
+			if code, err = ec.PendingCodeAt(ctx, contractAddr); err != nil {
 				return err
 			} else if len(code) == 0 {
 				return bind.ErrNoCode
@@ -568,7 +582,7 @@ func (ec *Client) Call(contractAddress common.Address, opts *bind.CallOpts, resu
 		}
 		if len(output) == 0 {
 			// Make sure we have a contract to operate on, and bail out otherwise.
-			if code, err = ec.CodeAt(ctx, contractAddress, opts.BlockNumber); err != nil {
+			if code, err = ec.CodeAt(ctx, contractAddr, opts.BlockNumber); err != nil {
 				return err
 			} else if len(code) == 0 {
 				return bind.ErrNoCode
@@ -577,19 +591,19 @@ func (ec *Client) Call(contractAddress common.Address, opts *bind.CallOpts, resu
 	}
 
 	if len(*results) == 0 {
-		res, err := ParsedAbi.Unpack(method, output)
+		res, err := parsedAbi.Unpack(method, output)
 		*results = res
 		return err
 	}
 	res := *results
-	return ParsedAbi.UnpackIntoInterface(res[0], method, output)
+	return parsedAbi.UnpackIntoInterface(res[0], method, output)
 }
 
 // BalanceOf query address in contract balance
 // returns *big.Int and error
-func (ec *Client) BalanceOf(address, contractAddress common.Address) (balance *big.Int, err error) {
+func (ec *Client) BalanceOf(address, contractAddr string) (balance *big.Int, err error) {
 	var results = make([]interface{}, 0)
-	err = ec.Call(contractAddress, nil, &results, "balanceOf", address)
+	err = ec.Call(common.HexToAddress(contractAddr), nil, &results, "balanceOf", ERC20Abi, common.HexToAddress(address))
 	if err != nil {
 		return nil, err
 	}

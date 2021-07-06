@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/ackermanx/ethclient/ethclient"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 func main() {
@@ -29,8 +28,8 @@ func main() {
 	log.Println("latest block number: ", blockNumber)
 
 	// get busd balance
-	busdContractAddress := common.HexToAddress("0xe9e7cea3dedca5984780bafc599bd69add087d56")
-	address := common.HexToAddress("0x0D022fA46e3124634c42219DF9587A91972c3930")
+	busdContractAddress := "0xe9e7cea3dedca5984780bafc599bd69add087d56"
+	address := "0x0D022fA46e3124634c42219DF9587A91972c3930"
 	balance, err := client.BalanceOf(address, busdContractAddress)
 	if err != nil {
 		panic(err)

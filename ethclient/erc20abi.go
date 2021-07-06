@@ -1,14 +1,6 @@
 package ethclient
 
-import (
-	"strings"
-
-	"github.com/ethereum/go-ethereum/accounts/abi"
-)
-
-var (
-	ParsedAbi abi.ABI
-	ERC20Abi  = `[
+const ERC20Abi = `[
     {
         "constant": false,
         "inputs": [
@@ -229,8 +221,3 @@ var (
         "type": "event"
     }
 ]`
-)
-
-func init() {
-	ParsedAbi, _ = abi.JSON(strings.NewReader(ERC20Abi))
-}
