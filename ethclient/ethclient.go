@@ -23,7 +23,7 @@ import (
 type Client struct {
 	c          *rpc.Client
 	timeout    int
-	parsedAbis map[common.Address]abi.ABI // contractAddress:abi
+	parsedAbis AddrAbiMap
 }
 
 // Dial connects a client to the given URL.
@@ -41,7 +41,7 @@ func DialContext(ctx context.Context, rawurl string) (*Client, error) {
 
 // NewClient creates a client that uses the given RPC client.
 func NewClient(c *rpc.Client) *Client {
-	return &Client{c: c, timeout: 5, parsedAbis: make(map[common.Address]abi.ABI)}
+	return &Client{c: c, timeout: 5, parsedAbis: AddrAbiMap{}}
 }
 
 // NewClientWithTimeout creates a client that uses the given RPC client and timeout.
@@ -545,14 +545,14 @@ func (ec *Client) Call(contractAddr common.Address, opts *bind.CallOpts, results
 		results = new([]interface{})
 	}
 	// cache parsedAbi
-	parsedAbi, ok := ec.parsedAbis[contractAddr]
+	parsedAbi, ok := ec.parsedAbis.Load(contractAddr)
 	if !ok {
 		p, err := abi.JSON(strings.NewReader(abiStr))
 		if err != nil {
 			return err
 		}
 		parsedAbi = p
-		ec.parsedAbis[contractAddr] = parsedAbi
+		ec.parsedAbis.Store(contractAddr, parsedAbi)
 	}
 	// Pack the input, call and unpack the results
 	input, err := parsedAbi.Pack(method, params...)
