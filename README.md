@@ -10,11 +10,11 @@ ethclient is extend [go-ethereum](https://github.com/ethereum/go-ethereum) clien
 ## install
 
 ```
-go get github.com/ackermanx/ethclient
+go get github.com/ackermanx/ethereum
 ```
 
 ## usage
-Below is an example which shows some common use cases for ethclient.  Check [ethclient_test.go](https://github.com/ackermanx/ethclient/blob/main/ethclient/ethclient_test.go) for more usage.
+Below is an example which shows some common use cases for ethclient.  Check [ethclient_test.go](https://github.com/ackermanx/ethereum/blob/main/ethereum/ethclient_test.go) for more usage.
 
 ### get balance
 
@@ -25,15 +25,15 @@ import (
 	"context"
 	"log"
 	"time"
-	"github.com/ackermanx/ethclient/ethclient"
-	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/ackermanx/ethereum/client"
 )
 
 func main() {
 	var binanceMainnet = `https://bsc-dataseed.binance.org`
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	client, err := ethclient.DialContext(ctx, binanceMainnet)
+	c, err := client.DialContext(ctx, binanceMainnet)
 	cancel()
 	if err != nil {
 		panic(err)
@@ -41,7 +41,7 @@ func main() {
 
 	// get latest height
 	ctx, cancel = context.WithTimeout(context.Background(), time.Second*5)
-	blockNumber, err := client.BlockNumber(ctx)
+	blockNumber, err := c.BlockNumber(ctx)
 	cancel()
 	if err != nil {
 		panic(err)
@@ -51,13 +51,14 @@ func main() {
 	// get busd balance
 	busdContractAddress := "0xe9e7cea3dedca5984780bafc599bd69add087d56"
 	address := "0x0D022fA46e3124634c42219DF9587A91972c3930"
-	balance, err := client.BalanceOf(address, busdContractAddress)
+	balance, err := c.BalanceOf(address, busdContractAddress)
 	if err != nil {
 		panic(err)
 	}
-	
+
 	log.Printf("address busd balance: %s\n", balance.String())
 }
+
 ```
 
 ### generate pool address offline
@@ -68,13 +69,14 @@ package main
 import (
 	"fmt"
 	"math/big"
-	"github.com/ackermanx/ethclient/swap"
+
+	"github.com/ackermanx/ethereum/uniswap"
 )
 
 func main() {
 	weth := "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
 	dai := "0x6b175474e89094c44da98b954eedeac495271d0f"
-	pair, err := swap.CalculatePoolAddressV2(weth, dai)
+	pair, err := uniswap.CalculatePoolAddressV2(weth, dai)
 	if err != nil {
 		panic(err)
 	}
@@ -82,7 +84,7 @@ func main() {
 	fmt.Printf("weth-dai pair address in uniswap v2: %s\n", pair.String())
 
 	fee := big.NewInt(3000)
-	poolAddress, err := swap.CalculatePoolAddressV3(weth, dai, fee)
+	poolAddress, err := uniswap.CalculatePoolAddressV3(weth, dai, fee)
 	if err != nil {
 		panic(err)
 	}

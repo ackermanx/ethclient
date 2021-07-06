@@ -5,14 +5,14 @@ import (
 	"log"
 	"time"
 
-	"github.com/ackermanx/ethclient/ethclient"
+	"github.com/ackermanx/ethereum/client"
 )
 
 func main() {
 	var binanceMainnet = `https://bsc-dataseed.binance.org`
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	client, err := ethclient.DialContext(ctx, binanceMainnet)
+	c, err := client.DialContext(ctx, binanceMainnet)
 	cancel()
 	if err != nil {
 		panic(err)
@@ -20,7 +20,7 @@ func main() {
 
 	// get latest height
 	ctx, cancel = context.WithTimeout(context.Background(), time.Second*5)
-	blockNumber, err := client.BlockNumber(ctx)
+	blockNumber, err := c.BlockNumber(ctx)
 	cancel()
 	if err != nil {
 		panic(err)
@@ -30,7 +30,7 @@ func main() {
 	// get busd balance
 	busdContractAddress := "0xe9e7cea3dedca5984780bafc599bd69add087d56"
 	address := "0x0D022fA46e3124634c42219DF9587A91972c3930"
-	balance, err := client.BalanceOf(address, busdContractAddress)
+	balance, err := c.BalanceOf(address, busdContractAddress)
 	if err != nil {
 		panic(err)
 	}

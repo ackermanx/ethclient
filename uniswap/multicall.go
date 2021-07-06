@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/ackermanx/ethclient/ethclient"
+	"github.com/ackermanx/ethereum/client"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -26,8 +26,7 @@ type Multicall2Result struct {
 	ReturnData *big.Int
 }
 
-
-func MultiCall(client *ethclient.Client, methodName string, opts *bind.CallOpts, multiCallParam []Multicall2Call)(out []interface{}, err error) {
+func MultiCall(client *client.Client, methodName string, opts *bind.CallOpts, multiCallParam []Multicall2Call) (out []interface{}, err error) {
 
 	out = make([]interface{}, 0)
 	parsedAbi, err := abi.JSON(strings.NewReader(MultiFragmentAbi))

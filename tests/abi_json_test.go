@@ -5,14 +5,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ackermanx/ethclient/ethclient"
+	"github.com/ackermanx/ethereum/client"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 func BenchmarkAddressToString(b *testing.B) {
 	m := make(map[common.Address]abi.ABI)
-	r := strings.NewReader(ethclient.ERC20Abi)
+	r := strings.NewReader(client.ERC20Abi)
 
 	a := common.HexToAddress("0x431beE0E54b49105964E11b9035A198A1D4735AD")
 	for i := 0; i < b.N; i++ {
@@ -34,12 +34,12 @@ func BenchmarkSha1(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		s := sha1.New()
-		s.Write([]byte(ethclient.ERC20Abi))
+		s.Write([]byte(client.ERC20Abi))
 		d := s.Sum(nil)
 		key := string(d)
 		parsedAbi, ok := m[key]
 		if !ok {
-			p, err := abi.JSON(strings.NewReader(ethclient.ERC20Abi))
+			p, err := abi.JSON(strings.NewReader(client.ERC20Abi))
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -52,7 +52,7 @@ func BenchmarkSha1(b *testing.B) {
 
 func BenchmarkAbiJson(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		parsedAbi, err := abi.JSON(strings.NewReader(ethclient.ERC20Abi))
+		parsedAbi, err := abi.JSON(strings.NewReader(client.ERC20Abi))
 		if err != nil {
 			b.Fatal(err)
 		}

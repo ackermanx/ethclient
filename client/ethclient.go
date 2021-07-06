@@ -1,5 +1,5 @@
-// Package ethclient provides a client for the Ethereum RPC API.
-package ethclient
+// Package client provides a client for the Ethereum RPC API.
+package client
 
 import (
 	"context"
@@ -456,8 +456,6 @@ func (ec *Client) PendingTransactionCount(ctx context.Context) (uint, error) {
 	err := ec.c.CallContext(ctx, &num, "eth_getBlockTransactionCountByNumber", "pending")
 	return uint(num), err
 }
-
-// TODO: SubscribePendingTransactions (needs server side)
 
 // Contract Calling
 
