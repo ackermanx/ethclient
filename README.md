@@ -87,8 +87,22 @@ func main() {
 		panic(err)
 	}
 	log.Println(tx.Hash().String())
-}
 
+	// send bnb
+	tx, err = c.BuildTransferTx(testKey, "0x38F32C2473a314d447d681D30e1C0f5D07194371", &bind.TransactOpts{
+		From:     common.HexToAddress("0xe96e6b50db659935878f6f3b0491b7f192cf5f59"),
+		Value:    big.NewInt(20000000000000000),
+		GasLimit: 21000,
+	})
+	if err != nil {
+		panic(err)
+	}
+	log.Println(tx.Hash().String())
+	err = c.SendTransaction(context.Background(), tx)
+	if err != nil {
+		panic(err)
+	}
+}
 ```
 
 ### generate pool address offline

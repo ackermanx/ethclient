@@ -763,6 +763,95 @@ func (ec *Client) BuildContractTx(privKey, method, abiStr string, contract *comm
 	return signedTx, nil
 }
 
+func (ec *Client) BuildTransferTx(privKey, to string, opts *bind.TransactOpts) (tx *types.Transaction, err error) {
+	// decode private key
+	pKey, err := crypto.HexToECDSA(privKey)
+	if err != nil {
+		err = errors.WithMessage(err, "hex private key to ECDSA key: ")
+		return
+	}
+	from := crypto.PubkeyToAddress(pKey.PublicKey)
+
+	// Don't crash on a lazy user
+	if opts == nil {
+		opts = &bind.TransactOpts{From: from, GasLimit: 21000}
+	}
+
+	// Ensure a valid value field and resolve the account nonce
+	value := opts.Value
+	if value == nil {
+		opts.Value = new(big.Int)
+	}
+	var nonce uint64
+	if opts.Nonce == nil {
+		nonce, err = ec.PendingNonceAt(ensureContext(opts.Context), from)
+		if err != nil {
+			return nil, fmt.Errorf("failed to retrieve account nonce: %v", err)
+		}
+	} else {
+		nonce = opts.Nonce.Uint64()
+	}
+
+	// Figure out reasonable gas price values
+	if opts.GasPrice != nil && (opts.GasFeeCap != nil || opts.GasTipCap != nil) {
+		return nil, errors.New("both gasPrice and (maxFeePerGas or maxPriorityFeePerGas) specified")
+	}
+	head, err := ec.HeaderByNumber(ensureContext(opts.Context), nil)
+	if err != nil {
+		return nil, errors.WithMessage(err, "header by number")
+	}
+	if head.BaseFee != nil && opts.GasPrice == nil {
+		if opts.GasTipCap == nil {
+			tip, err := ec.SuggestGasTipCap(ensureContext(opts.Context))
+			if err != nil {
+				return nil, err
+			}
+			opts.GasTipCap = tip
+		}
+		if opts.GasFeeCap == nil {
+			gasFeeCap := new(big.Int).Add(
+				opts.GasTipCap,
+				new(big.Int).Mul(head.BaseFee, big.NewInt(2)),
+			)
+			opts.GasFeeCap = gasFeeCap
+		}
+		if opts.GasFeeCap.Cmp(opts.GasTipCap) < 0 {
+			return nil, fmt.Errorf("maxFeePerGas (%v) < maxPriorityFeePerGas (%v)", opts.GasFeeCap, opts.GasTipCap)
+		}
+	} else {
+		if opts.GasFeeCap != nil || opts.GasTipCap != nil {
+			return nil, errors.New("maxFeePerGas or maxPriorityFeePerGas specified but london is not active yet")
+		}
+		if opts.GasPrice == nil {
+			price, err := ec.SuggestGasPrice(ensureContext(opts.Context))
+			if err != nil {
+				return nil, err
+			}
+			opts.GasPrice = price
+		}
+	}
+	toAddr := common.HexToAddress(to)
+	// Create the transaction, sign it and schedule it for execution
+	rawTx := types.NewTransaction(nonce, toAddr, opts.Value, opts.GasLimit, opts.GasPrice, []byte{})
+
+	if ec.chainID == nil {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(ec.timeout))
+		chainID, err := ec.ChainID(ctx)
+		cancel()
+		if err != nil {
+			return nil, errors.WithMessage(err, "get chain id: ")
+		}
+		ec.chainID = chainID
+	}
+
+	signedTx, err := types.SignTx(rawTx, types.NewLondonSigner(ec.chainID), pKey)
+	if err != nil {
+		err = errors.WithMessage(err, "signed raw tx")
+		return
+	}
+	return signedTx, nil
+}
+
 func toCallArg(msg ethereum.CallMsg) interface{} {
 	arg := map[string]interface{}{
 		"from": msg.From,
