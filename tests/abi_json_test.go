@@ -10,6 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// go test -bench=.  -cpu=4 -benchmem=true -run=none -memprofile mem.out -cpuprofile=cpu.prof
+// 查看mem.out pprof -http=:8080  mem.out
 func BenchmarkAddressToString(b *testing.B) {
 	m := make(map[common.Address]abi.ABI)
 	r := strings.NewReader(client.ERC20Abi)

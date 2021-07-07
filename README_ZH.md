@@ -1,35 +1,38 @@
-English | [🇨🇳中文](README_ZH.md)
+🇨🇳中文 | [English](README.md)
 
-## Introduction
+## 简介
 
-ethereum/client is extend [go-ethereum](https://github.com/ethereum/go-ethereum) client for interact with smart contract. 
+ethereum/client是对go-ethereum/client的扩展，添加uniswap v3相关工具、分层确定性钱包以及合约交互相关功能。
 
-## Features:
-- query token balance
+## 功能：
 
-- calculate uniswap v2/v3 liquid pool address offline
+- 查询erc20代币余额
 
-- sort token address
+- uniswap v2/v3流动池地址离线计算
 
-- encode uniswap v3 path
+- token地址排序
 
-- uniswap v3 liquid pool x96 price format convert
+- uniswap v3 path编码
 
-- query smart contract data
+- uniswap v3流动池x96格式价格转换
 
-- build contract transaction and main currency transaction
+- 智能合约数据查询
 
-- HD wallet
-## install
+- 智能合约/主币交易构建
+
+- 分层确定性钱包
+
+## 安装
 
 ```
 go get -u github.com/ackermanx/ethereum
 ```
 
-## usage
-Below is an example which shows some common use cases for ethereum/client.  Check [ethclient_test.go](https://github.com/ackermanx/ethereum/blob/main/client/ethclient_test.go) for more usage.
+## 使用
 
-### get balance/token balance/token transfer/main currency transfer
+下面是一些常用例子，更多使用方式可以查看[ethclient_test.go](https://github.com/ackermanx/ethereum/blob/main/client/ethclient_test.go)以及 examples下面的示例。
+
+### 获取余额/代币余额/token转账/主币转账
 
 ```go
 package main
@@ -116,7 +119,7 @@ func main() {
 }
 ```
 
-### generate pool address offline
+### 离线生成uniswap v3流动池地址
 
 ```go
 package main
