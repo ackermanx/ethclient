@@ -151,8 +151,8 @@ func main() {
 
 ```
 
-## JetBrains OS licenses
+## JetBrains 开源证书支持
 
-`ethclient` had been being developed with GoLand under the **free JetBrains Open Source license(s)** granted by JetBrains s.r.o., hence I would like to express my thanks here.
+`ethereum` 项目是在 JetBrains 公司旗下的 GoLand 集成开发环境中进行开发，基于 free JetBrains Open Source license(s) 正版免费授权，在此表达我的谢意。
 
-<a href="https://www.jetbrains.com/?from=ethclient" target="_blank"><img src="https://raw.githubusercontent.com/ackermanx/ethclient/main/docs/images/jetbrains/jetbrains-variant-3.svg" width="216" align="middle" align="middle"/></a>
+<a href="https://www.jetbrains.com/?from=ethereum" target="_blank"><img src="https://raw.githubusercontent.com/ackermanx/ethereum/main/docs/images/jetbrains/jetbrains-variant-3.svg" width="216" align="middle" align="middle"/></a>

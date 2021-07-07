@@ -20,13 +20,13 @@ ethereum/client is extend [go-ethereum](https://github.com/ethereum/go-ethereum)
 - build contract transaction and main currency transaction
 
 - HD wallet
-## install
+## Install
 
 ```
 go get -u github.com/ackermanx/ethereum
 ```
 
-## usage
+## Usage
 Below is an example which shows some common use cases for ethereum/client.  Check [ethclient_test.go](https://github.com/ackermanx/ethereum/blob/main/client/ethclient_test.go) for more usage.
 
 ### get balance/token balance/token transfer/main currency transfer
@@ -150,6 +150,6 @@ func main() {
 
 ## JetBrains OS licenses
 
-`ethclient` had been being developed with GoLand under the **free JetBrains Open Source license(s)** granted by JetBrains s.r.o., hence I would like to express my thanks here.
+`ethereum` had been being developed with GoLand under the **free JetBrains Open Source license(s)** granted by JetBrains s.r.o., hence I would like to express my thanks here.
 
-<a href="https://www.jetbrains.com/?from=ethclient" target="_blank"><img src="https://raw.githubusercontent.com/ackermanx/ethclient/main/docs/images/jetbrains/jetbrains-variant-3.svg" width="216" align="middle" align="middle"/></a>
+<a href="https://www.jetbrains.com/?from=ethereum" target="_blank"><img src="https://raw.githubusercontent.com/ackermanx/ethereum/main/docs/images/jetbrains/jetbrains-variant-3.svg" width="216" align="middle" align="middle"/></a>
