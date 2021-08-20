@@ -2,7 +2,7 @@
 
 ## 简介
 
-ethereum/client是对go-ethereum/client的扩展，添加uniswap v3相关工具、分层确定性钱包以及合约交互相关功能。
+ethclient是对go-ethereum/client的扩展，添加uniswap v3相关工具、分层确定性钱包以及合约交互相关功能。
 
 ## 功能：
 
@@ -25,12 +25,12 @@ ethereum/client是对go-ethereum/client的扩展，添加uniswap v3相关工具�
 ## 安装
 
 ```
-go get -u github.com/ackermanx/ethereum
+go get -u github.com/ackermanx/ethclient
 ```
 
 ## 使用
 
-下面是一些常用例子，更多使用方式可以查看[ethclient_test.go](https://github.com/ackermanx/ethereum/blob/main/client/ethclient_test.go)以及 examples下面的示例。
+下面是一些常用例子，更多使用方式可以查看[ethclient_test.go](https://github.com/ackermanx/ethereum/blob/main/ethclient_test.go)以及 examples下面的示例。
 
 ### 获取余额/代币余额/token转账/主币转账
 
@@ -43,7 +43,8 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ackermanx/ethereum/client"
+	"github.com/ackermanx/ethclient"
+	"github.com/ackermanx/ethclient/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -56,7 +57,7 @@ func main() {
 	var binanceMainnet = `https://data-seed-prebsc-1-s1.binance.org:8545`
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	c, err := client.DialContext(ctx, binanceMainnet)
+	c, err := ethclient.DialContext(ctx, binanceMainnet)
 	cancel()
 	if err != nil {
 		panic(err)
@@ -88,7 +89,7 @@ func main() {
 	// build contract transfer
 	tx, err := c.BuildContractTx(
 		testKey, "transfer",
-		client.ERC20Abi,
+		abi.ERC20Abi,
 		&busdContractAddress, &bind.TransactOpts{From: common.HexToAddress(address)},
 		common.HexToAddress("0x38F32C2473a314d447d681D30e1C0f5D07194371"),
 		big.NewInt(100000000000000000),
@@ -128,7 +129,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ackermanx/ethereum/uniswap"
+	"github.com/ackermanx/ethclient/uniswap"
 )
 
 func main() {

@@ -1,5 +1,5 @@
 // Package client provides a client for the Ethereum RPC API.
-package client
+package ethclient
 
 import (
 	"context"
@@ -9,8 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
-
+	erc20 "github.com/ackermanx/ethclient/abi"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -19,6 +18,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/pkg/errors"
 )
 
 // Client defines typed wrappers for the Ethereum RPC API.
@@ -26,7 +26,7 @@ type Client struct {
 	c          *rpc.Client
 	timeout    int
 	chainID    *big.Int
-	parsedAbis AddrAbiMap
+	parsedAbis erc20.AddrAbiMap
 }
 
 // Dial connects a client to the given URL.
@@ -44,12 +44,12 @@ func DialContext(ctx context.Context, rawurl string) (*Client, error) {
 
 // NewClient creates a client that uses the given RPC client.
 func NewClient(c *rpc.Client) *Client {
-	return &Client{c: c, timeout: 10, parsedAbis: AddrAbiMap{}}
+	return &Client{c: c, timeout: 10, parsedAbis: erc20.AddrAbiMap{}}
 }
 
 // NewClientWithTimeout creates a client that uses the given RPC client and timeout.
 func NewClientWithTimeout(c *rpc.Client, timeout int) *Client {
-	return &Client{c: c, timeout: timeout, parsedAbis: AddrAbiMap{}}
+	return &Client{c: c, timeout: timeout, parsedAbis: erc20.AddrAbiMap{}}
 }
 
 func (ec *Client) Close() {
@@ -604,7 +604,7 @@ func (ec *Client) Call(contractAddr common.Address, opts *bind.CallOpts, results
 // returns *big.Int and error
 func (ec *Client) BalanceOf(address, contractAddr string) (balance *big.Int, err error) {
 	var results = make([]interface{}, 0)
-	err = ec.Call(common.HexToAddress(contractAddr), nil, &results, "balanceOf", ERC20Abi, common.HexToAddress(address))
+	err = ec.Call(common.HexToAddress(contractAddr), nil, &results, "balanceOf", erc20.ERC20Abi, common.HexToAddress(address))
 	if err != nil {
 		return nil, err
 	}

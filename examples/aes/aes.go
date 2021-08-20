@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"log"
 
-	"github.com/ackermanx/ethereum/wallet"
+	"github.com/ackermanx/ethclient/wallet"
 )
 
 func main() {

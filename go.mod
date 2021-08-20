@@ -1,4 +1,4 @@
-module github.com/ackermanx/ethereum
+module github.com/ackermanx/ethclient
 
 go 1.16
 

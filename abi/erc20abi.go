@@ -1,4 +1,4 @@
-package client
+package abi
 
 const ERC20Abi = `[
     {

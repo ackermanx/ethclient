@@ -2,7 +2,7 @@ English | [🇨🇳中文](README_ZH.md)
 
 ## Introduction
 
-ethereum/client is extend [go-ethereum](https://github.com/ethereum/go-ethereum) client for interact with smart contract. 
+ethclient is extend [go-ethereum](https://github.com/ethereum/go-ethereum) client for interact with smart contract. 
 
 ## Features:
 - query token balance
@@ -23,11 +23,11 @@ ethereum/client is extend [go-ethereum](https://github.com/ethereum/go-ethereum)
 ## Install
 
 ```
-go get -u github.com/ackermanx/ethereum
+go get -u github.com/ackermanx/etheclient
 ```
 
 ## Usage
-Below is an example which shows some common use cases for ethereum/client.  Check [ethclient_test.go](https://github.com/ackermanx/ethereum/blob/main/client/ethclient_test.go) for more usage.
+Below is an example which shows some common use cases for ethereum/client.  Check [ethclient_test.go](https://github.com/ackermanx/ethereum/blob/main/ethclient_test.go) for more usage.
 
 ### get balance/token balance/token transfer/main currency transfer
 
@@ -40,7 +40,8 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ackermanx/ethereum/client"
+	"github.com/ackermanx/ethclient"
+	"github.com/ackermanx/ethclient/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -53,7 +54,7 @@ func main() {
 	var binanceMainnet = `https://data-seed-prebsc-1-s1.binance.org:8545`
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	c, err := client.DialContext(ctx, binanceMainnet)
+	c, err := ethclient.DialContext(ctx, binanceMainnet)
 	cancel()
 	if err != nil {
 		panic(err)
@@ -85,7 +86,7 @@ func main() {
 	// build contract transfer
 	tx, err := c.BuildContractTx(
 		testKey, "transfer",
-		client.ERC20Abi,
+		abi.ERC20Abi,
 		&busdContractAddress, &bind.TransactOpts{From: common.HexToAddress(address)},
 		common.HexToAddress("0x38F32C2473a314d447d681D30e1C0f5D07194371"),
 		big.NewInt(100000000000000000),
@@ -125,7 +126,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ackermanx/ethereum/uniswap"
+	"github.com/ackermanx/ethclient/uniswap"
 )
 
 func main() {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ackermanx/ethereum/uniswap"
+	"github.com/ackermanx/ethclient/uniswap"
 )
 
 func main() {
