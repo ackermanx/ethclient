@@ -30,7 +30,7 @@ go get -u github.com/ackermanx/ethclient
 
 ## 使用
 
-下面是一些常用例子，更多使用方式可以查看[client_test.go](https://github.com/ackermanx/ethereum/blob/main/ethclient_test.go)以及 examples下面的示例。
+下面是一些常用例子，更多使用方式可以查看[client_test.go](https://github.com/ackermanx/ethclient/blob/main/client_test.go)以及 examples下面的示例。
 
 ### 获取余额/代币余额/token转账/主币转账
 

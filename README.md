@@ -27,7 +27,7 @@ go get -u github.com/ackermanx/etheclient
 ```
 
 ## Usage
-Below is an example which shows some common use cases for ethereum/client.  Check [client_test.go](https://github.com/ackermanx/ethereum/blob/main/ethclient_test.go) for more usage.
+Below is an example which shows some common use cases for ethereum/client.  Check [client_test.go](https://github.com/ackermanx/ethclient/blob/main/client_test.go) for more usage.
 
 ### get balance/token balance/token transfer/main currency transfer
 
