@@ -832,7 +832,29 @@ func (ec *Client) BuildTransferTx(privKey, to string, opts *bind.TransactOpts) (
 	}
 	toAddr := common.HexToAddress(to)
 	// Create the transaction, sign it and schedule it for execution
-	rawTx := types.NewTransaction(nonce, toAddr, opts.Value, opts.GasLimit, opts.GasPrice, []byte{})
+	var rawTx *types.Transaction
+	if opts.GasFeeCap == nil {
+		baseTx := types.LegacyTx{
+			Nonce:    nonce,
+			To:       &toAddr,
+			GasPrice: opts.GasPrice,
+			Gas:      opts.GasLimit,
+			Value:    opts.Value,
+			Data:     []byte{},
+		}
+		rawTx = types.NewTx(&baseTx)
+	} else {
+		baseTx := types.DynamicFeeTx{
+			Nonce:     nonce,
+			GasFeeCap: opts.GasFeeCap,
+			GasTipCap: opts.GasTipCap,
+			Gas:       opts.GasLimit,
+			Value:     value,
+			To:        &toAddr,
+			Data:      []byte{},
+		}
+		rawTx = types.NewTx(&baseTx)
+	}
 
 	if ec.chainID == nil {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(ec.timeout))
