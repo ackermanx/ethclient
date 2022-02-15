@@ -23,7 +23,7 @@ ethclient is extend [go-ethereum](https://github.com/ethereum/go-ethereum) clien
 ## Install
 
 ```
-go get -u github.com/ackermanx/etheclient
+go get -u github.com/ackermanx/ethclient
 ```
 
 ## Usage
