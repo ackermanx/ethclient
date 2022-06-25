@@ -87,3 +87,25 @@ func CalculatePoolAddressV3(tokenA, tokenB string, fee *big.Int) (poolAddress co
 	hash := crypto.Keccak256(msg)
 	return common.BytesToAddress(hash[12:]), nil
 }
+
+// CalculatePoolAddress calculate uniswapV2 like pool address from token and pool address and pool init code
+func CalculatePoolAddress(tokenA, tokenB, factoryAddr common.Address, poolInitCodeStr string) (poolAddr common.Address, err error) {
+	poolInitCode, err := hex.DecodeString(poolInitCodeStr)
+	if err != nil {
+		err = errors.Wrap(err, "decode pool init code failed")
+		return
+	}
+
+	tkn0, tkn1 := sortAddressess(tokenA, tokenB)
+	msg := []byte{255}
+	msg = append(msg, factoryAddr.Bytes()...)
+	addrBytes := tkn0.Bytes()
+	addrBytes = append(addrBytes, tkn1.Bytes()...)
+	msg = append(msg, crypto.Keccak256(addrBytes)...)
+
+	msg = append(msg, poolInitCode...)
+	hash := crypto.Keccak256(msg)
+	pairAddressBytes := big.NewInt(0).SetBytes(hash)
+	pairAddressBytes = pairAddressBytes.Abs(pairAddressBytes)
+	return common.BytesToAddress(pairAddressBytes.Bytes()), nil
+}
