@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math/big"
 	"time"
@@ -17,38 +18,16 @@ var (
 )
 
 func main() {
-	var binanceMainnet = `https://rinkeby.infura.io/v3/19833d6f76a04d0ca7714eea34e0d670`
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	var binanceMainnet = `https://data-seed-prebsc-1-s2.binance.org:8545`
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	c, err := ethclient.DialContext(ctx, binanceMainnet)
 	cancel()
 	if err != nil {
 		panic(err)
 	}
+	getLatestBlock(c)
 
-	// // get latest height
-	// ctx, cancel = context.WithTimeout(context.Background(), time.Second*5)
-	// blockNumber, err := c.BlockNumber(ctx)
-	// cancel()
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// log.Println("latest block number: ", blockNumber)
-
-	// // get busd balance
-	// busdContractAddress := common.HexToAddress("0xed24fc36d5ee211ea25a80239fb8c4cfd80f12ee")
-	// address := "0xe96e6b50db659935878f6f3b0491B7F192cf5F59"
-	// bnbBalance, err := c.BalanceAt(context.Background(), common.HexToAddress(address), nil)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// log.Println("bnbBalance: ", bnbBalance.String())
-	// balance, err := c.BalanceOf(address, busdContractAddress.String())
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// log.Printf("address busd balance: %s\n", balance.String())
-
+	getTokenBalance(c)
 	// build contract transfer
 	gasFeeCap := big.NewInt(2000000000)
 	gasTipCap := big.NewInt(1000000000)
@@ -69,18 +48,48 @@ func main() {
 	}
 	log.Println(tx.Hash().String())
 
+}
+
+func getTokenBalance(c *ethclient.Client) {
+	// get busd balance
+	busdContractAddress := common.HexToAddress("0xed24fc36d5ee211ea25a80239fb8c4cfd80f12ee")
+	address := "0xe96e6b50db659935878f6f3b0491B7F192cf5F59"
+	bnbBalance, err := c.BalanceAt(context.Background(), common.HexToAddress(address), nil)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("bnbBalance: ", bnbBalance.String())
+	balance, err := c.BalanceOf(address, busdContractAddress.String())
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("address busd balance: %s\n", balance.String())
+}
+
+func getLatestBlock(c *ethclient.Client) {
+	// get latest height
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	blockNumber, err := c.BlockNumber(ctx)
+	cancel()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("latest block number: ", blockNumber)
+}
+
+func sendMainToken(c *ethclient.Client) {
 	// send bnb
-	// tx, err = c.BuildTransferTx(testKey, "0x38F32C2473a314d447d681D30e1C0f5D07194371", &bind.TransactOpts{
-	// 	From:     common.HexToAddress("0xe96e6b50db659935878f6f3b0491b7f192cf5f59"),
-	// 	Value:    big.NewInt(20000000000000000),
-	// 	GasLimit: 21000,
-	// })
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// log.Println(tx.Hash().String())
-	// err = c.SendTransaction(context.Background(), tx)
-	// if err != nil {
-	// 	panic(err)
-	// }
+	tx, err := c.BuildTransferTx(testKey, "0x38F32C2473a314d447d681D30e1C0f5D07194371", &bind.TransactOpts{
+		From:     common.HexToAddress("0xe96e6b50db659935878f6f3b0491b7f192cf5f59"),
+		Value:    big.NewInt(20000000000000000),
+		GasLimit: 21000,
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(tx.Hash().String())
+	err = c.SendTransaction(context.Background(), tx)
+	if err != nil {
+		panic(err)
+	}
 }
